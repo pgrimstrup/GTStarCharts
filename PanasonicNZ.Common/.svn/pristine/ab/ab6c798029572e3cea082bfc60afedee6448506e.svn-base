@@ -1,0 +1,359 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Data.SqlClient;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
+
+namespace PanasonicNZ.Common.Upgrade
+{
+    public static class DbContextSchemaUtils
+    {
+        public static byte[] CompressModel(this DbContext context)
+        {
+            if (context == null) return null;
+
+            var model = SerializeModel(context);
+            using (var outStream = new MemoryStream())
+            {
+                using (var gzipStream = new GZipStream(outStream, CompressionMode.Compress))
+                {
+                    model.Save(gzipStream);
+                }
+
+                return outStream.ToArray();
+            }
+        }
+
+        public static XDocument SerializeModel(this DbContext context)
+        {
+            if (context == null) return null;
+
+            using (var mem = new MemoryStream())
+            {
+                using (XmlWriter writer = XmlWriter.Create(mem, new XmlWriterSettings { Indent = true }))
+                {
+                    EdmxWriter.WriteEdmx(context, writer);
+                }
+
+                mem.Position = 0;
+                return XDocument.Load(mem);
+            }
+        }
+
+        public static bool DatabaseExists(this DbContext context, out int dbid, out string name, out DateTime crdate)
+        {
+            if (context.Database.Exists())
+            {
+                try
+                {
+                    if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                        context.Database.Connection.Open();
+
+                    using (var cmd = context.Database.Connection.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT dbid, name, crdate FROM sysdatabases WHERE name = @DbName";
+                        cmd.AddWithValue("DbName", context.Database.Connection.Database);
+                        using (var rdr = cmd.ExecuteReader())
+                        {
+                            if (rdr.Read() && !rdr.IsDBNull(0))
+                            {
+                                dbid = rdr.GetInt16(0);
+                                name = rdr.GetString(1);
+                                crdate = rdr.GetDateTime(2);
+                                return true;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Unable to connect to [{context.Database.Connection.DataSource}].[MASTER] database: {ex.Message}");
+                }
+            }
+
+            dbid = 0;
+            name = context.Database.Connection.Database;
+            crdate = DateTime.MinValue;
+            return false;
+        }
+
+        public static bool CreateDatabase(this DbContext context, out int dbid, out string name, out DateTime crdate)
+        {
+            try
+            {
+                context.Database.Create();
+
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT dbid, name, crdate FROM sysdatabases WHERE name = @DbName";
+                    cmd.AddWithValue("DbName", context.Database.Connection.Database);
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        if (rdr.Read())
+                        {
+                            dbid = rdr.GetInt16(0);
+                            name = rdr.GetString(1);
+                            crdate = rdr.GetDateTime(2);
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Unable to connect to [{context.Database.Connection.DataSource}].[MASTER] database: {ex.Message}");
+            }
+
+            dbid = 0;
+            name = context.Database.Connection.Database;
+            crdate = DateTime.MinValue;
+            return false;
+        }
+
+        public static bool TableExists(this DbContext context, string name)
+        {
+            return TableExists(context, null, name, out string actualschema, out string actualname);
+        }
+
+        public static bool TableExists(this DbContext context, string schema, string name)
+        {
+            return TableExists(context, schema, name, out string actualschema, out string actualname);
+        }
+
+        public static bool TableExists(this DbContext context, string name, out string actualschema, out string actualname)
+        {
+            return TableExists(context, null, name, out actualschema, out actualname);
+        }
+
+        public static bool TableExists(this DbContext context, string schema, string name, out string actualschema, out string actualname)
+        {
+            try
+            {
+                if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                    context.Database.Connection.Open();
+
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = @"select t.object_id, s.name, t.name
+from sys.tables t
+join sys.schemas s on s.schema_id = t.schema_id
+where t.object_id = object_id(@TableName)";
+
+                    if (String.IsNullOrEmpty(schema))
+                        cmd.AddWithValue("TableName", name);
+                    else
+                        cmd.AddWithValue("TableName", $"{schema}.{name}");
+
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        if (rdr.Read() && !rdr.IsDBNull(0))
+                        {
+                            actualschema = rdr.GetString(1);
+                            actualname = rdr.GetString(2);
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            actualschema = schema;
+            actualname = name;
+            return false;
+        }
+
+        public static bool IsUpgradeNeeded(this DbContext context)
+        {
+            try
+            {
+                var model = context.CompressModel();
+
+                if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                    context.Database.Connection.Open();
+
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT TOP 1 Model, ProductVersion, DbContextVersion FROM [__PanaUpgrade] WHERE ContextKey = @ContextKey ORDER BY DateUpgraded DESC";
+                    cmd.AddWithValue("ContextKey", context.GetType().FullName);
+
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        if (rdr.Read())
+                        {
+                            var bytes = (byte[])rdr.GetValue(0);
+                            if (bytes.CompareTo(model) != 0) return true;
+
+                            Version v = new Version(rdr.GetString(1));
+                            if (v.CompareTo(ProductVersion()) != 0) return true;
+
+                            v = new Version(rdr.GetString(2));
+                            if (v.CompareTo(DbContextVersion(context)) != 0) return true;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        public static DateTime? GetLastRefreshTime(this DbContext context)
+        {
+            try
+            {
+                var model = context.CompressModel();
+                if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                    context.Database.Connection.Open();
+
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT TOP 1 DateRefreshed FROM [__PanaUpgrade] WHERE ContextKey = @ContextKey ORDER BY DateUpgraded DESC";
+                    cmd.AddWithValue("ContextKey", context.GetType().FullName);
+
+                    using (var rdr = cmd.ExecuteReader())
+                    {
+                        if (rdr.Read())
+                        {
+                            if (rdr.IsDBNull(0))
+                                return null;
+
+                            return rdr.GetDateTime(0);
+                        }
+                    }
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        public static void CreatePanaUpgradeTable(this DbContext context)
+        {
+            if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                context.Database.Connection.Open();
+
+            if (!context.TableExists("__PanaUpgrade"))
+            {
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = @"
+CREATE TABLE [__PanaUpgrade](
+    Id int IDENTITY PRIMARY KEY,
+    ContextKey nvarchar(100) NOT NULL,
+    Model varbinary(max) NULL,
+    ProductVersion varchar(20) NOT NULL,
+    DbContextVersion varchar(20) NOT NULL,
+    DateUpgraded DATETIME NOT NULL,
+    DateRefreshed DATETIME NULL
+);
+CREATE INDEX [__PanaUpgrade_DateUpgraded] ON [__PanaUpgrade](ContextKey, DateUpgraded);
+";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            // Make sure the Microsoft Migrations table has been removed
+            if(context.TableExists("__MigrationHistory"))
+            {
+                using (var cmd = context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = @"DROP TABLE [__MigrationHistory]";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public static void AddPanaUpgrade(this DbContext context)
+        {
+            if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                context.Database.Connection.Open();
+
+            using (var cmd = context.Database.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+INSERT INTO [__PanaUpgrade] (
+    ContextKey, Model, ProductVersion, DbContextVersion, DateUpgraded
+) VALUES (
+    @ContextKey, @Model, @ProductVersion, @DbContextVersion, @DateUpgraded
+)";
+                cmd.AddWithValue("ContextKey", context.GetType().FullName);
+                cmd.AddWithValue("Model", context.CompressModel());
+                cmd.AddWithValue("ProductVersion", ProductVersion().ToString());
+                cmd.AddWithValue("DbContextVersion", DbContextVersion(context).ToString());
+                cmd.AddWithValue("DateUpgraded", DateTime.Now);
+
+                cmd.ExecuteNonQuery();
+            }
+
+        }
+
+        public static void AddDataRefresh(this DbContext context)
+        {
+            if (context.Database.Connection.State == System.Data.ConnectionState.Closed)
+                context.Database.Connection.Open();
+
+            using (var cmd = context.Database.Connection.CreateCommand())
+            {
+                cmd.CommandText = @"
+UPDATE [__PanaUpgrade] SET DateRefreshed = @DateRefreshed WHERE Id = (
+    SELECT TOP 1 Id FROM [__PanaUpgrade] WHERE ContextKey = @ContextKey ORDER BY DateUpgraded DESC
+)";
+                cmd.AddWithValue("ContextKey", context.GetType().FullName);
+                cmd.AddWithValue("DateRefreshed", DateTime.Now);
+
+                cmd.ExecuteNonQuery();
+            }
+
+        }
+
+
+        public static int CompareTo(this byte[] bytes, byte[] other)
+        {
+            if (bytes == null && other == null) return 0;
+            if (bytes == null) return -1;
+            if (other == null) return 1;
+
+            for (int i = 0; i < bytes.Length && i < other.Length; i++)
+            {
+                int result = bytes[i].CompareTo(other[i]);
+                if (result != 0) return result;
+            }
+
+            if (bytes.Length < other.Length) return -1;
+            if (bytes.Length > other.Length) return 1;
+            return 0;
+        }
+
+        public static Version ProductVersion()
+        {
+            return System.Reflection.Assembly.GetEntryAssembly().GetName().Version;
+        }
+
+        public static Version DbContextVersion(this DbContext context)
+        {
+            return context.GetType().Assembly.GetName().Version;
+        }
+
+        public static DbParameter AddWithValue(this DbCommand cmd, string name, object value)
+        {
+            var p = cmd.CreateParameter();
+            p.ParameterName = name;
+            if (value == null)
+                p.Value = DBNull.Value;
+            else
+                p.Value = value;
+            cmd.Parameters.Add(p);
+            return p;
+        }
+    }
+}

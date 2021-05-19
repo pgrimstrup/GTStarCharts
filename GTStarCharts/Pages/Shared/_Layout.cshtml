@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - GTStarCharts</title>
+    <link rel="stylesheet" href="~/css/bootstrap-dark.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body class="fixed-top-main">
+    <header>
+        <nav class="navbar navbar-dark bg-dark fixed-top navbar-expand-sm navbar-toggleable-sm  border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">GT Star Charts</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse">
+                    <div class="navbar-nav mr-auto">
+                        <a class="nav-item nav-link" asp-area="" asp-page="/Index">Home</a>
+                        <a class="nav-item nav-link" asp-page="Encounters">Random Encounters</a>
+                        <a class="nav-item nav-link" asp-page="Words">Word Generator</a>
+                        <a class="nav-item nav-link" asp-page="EditLookups">Edit Lookups</a>
+                        <a class="nav-item nav-link" asp-page="RandomCharacter">Random Character</a>
+                        <a class="nav-item nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
+                    </div>
+                    <div>
+                        <form class="form-inline">
+                            <input placeholder="Search" />
+                            <button class="btn btn-secondary btn-sm">Search</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container-fluid">
+            &copy; @DateTime.Today.Year - GT Star Charts - Grimstrup Consulting<a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,32 @@
+﻿@page "{handler?}"
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="text-center">
+    <h3 class="display-4">Mapped Space</h3>
+</div>
+
+<form method="post">
+    <div style="text-align:center">
+        <table class="margin-center" style="width:auto" align="center">
+            @foreach(var row in Model.Rows)
+            {
+                <tr>
+                    @foreach(var sector in row)
+                    {
+                        <td style="font-size:small">
+                            @if (sector != null)
+                            {
+                                <a href="@Url.Page("/sector", new { milieu = sector.Milieu, sector = sector.DefaultName  })">
+                                    <img src="/api/Images/@sector.Id/Thumbnail" />
+                                </a>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </table>
+    </div>
+</form>

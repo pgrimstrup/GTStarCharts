@@ -1,0 +1,237 @@
+﻿@page "/{milieu}/{sector}/{subsector}/{hex}"
+@model GTStarCharts.Pages.SystemDataModel
+@{
+}
+
+<div class="text-center">
+    <h3 class="display-4">
+        <span>@Model.Data.Name (@Model.Data.Hex),</span>
+        <a href="@Url.Page("/subsector", new { milieu = Model.Sector.Milieu, sector = Model.Sector.DefaultName, subsector = Model.Subsector.Name })">@Model.Subsector.Name (Subsector @Model.Subsector.Code)</a>,
+        <a href="@Url.Page("/sector", new { milieu = Model.Sector.Milieu, sector = Model.Sector.DefaultName })">@Model.Sector.DefaultName</a>
+    </h3>
+</div>
+
+@using (Html.BeginForm(FormMethod.Post))
+{
+    <div class="float-right" style="margin-left: 10px">
+        <div class="text-right">
+            @if (Model.TravelZone.Code == "A")
+            {
+                <label class="alert alert-warning">Advisory: Amber Zone</label>
+            }
+            else if (Model.TravelZone.Code == "R")
+            {
+                <label class="alert alert-danger">Advisory: Red Zone</label>
+            }
+            else if (Model.TravelZone.Code == "B")
+            {
+                <label class="alert alert-info">Advisory: Balkanized</label>
+            }
+            else if (Model.TravelZone.Code == "W")
+            {
+                <label class="alert alert-warning">Advisory: Wilds</label>
+            }
+
+            @if (!String.IsNullOrEmpty(Model.Bases.Code))
+            {
+                <label class="alert alert-info">@Model.Bases.ShortText</label>
+            }
+        </div>
+        <div>
+            <img src="/api/Images/@Model.Data.Id" style="cursor: pointer" onclick="SectorImageClick(event)" />
+        </div>
+        <div>
+            <div class="display-3 text-muted m-1">Traveller Description</div>
+            <textarea class="form-control" rows="10" asp-for="Data.Description"></textarea>
+            <button type="submit" class="btn btn-primary btn-sm m-1">Save Description</button>
+        </div>
+    </div>
+
+    <div>
+        <table class="table table-sm">
+            <tr>
+                <td class="display-4 text-muted">UWP</td>
+                <td colspan="2" class="text-primary display-4">@Model.Data.UWP</td>
+            </tr>
+
+            <tr>
+                <td>Starport</td>
+                <td class="text-muted no-wrap">@Model.Starport.Code</td>
+                <td>@Model.Starport.ShortText</td>
+            </tr>
+
+            <tr>
+                <td>Planet Size</td>
+                <td class="text-muted no-wrap">@Model.PlanetSize.Code</td>
+                <td>@Model.PlanetSize.ShortText</td>
+            </tr>
+            @if (!String.IsNullOrEmpty(Model.Gravity.Code))
+            {
+                <tr>
+                    <td>Gravity</td>
+                    <td class="text-muted no-wrap">@Model.Gravity.Code</td>
+                    <td>@Model.Gravity.ShortText</td>
+                </tr>
+            }
+            <tr>
+                <td>Atmosphere</td>
+                <td class="text-muted no-wrap">@Model.Atmosphere.Code</td>
+                <td>@Model.Atmosphere.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Hydrosphere</td>
+                <td class="text-muted no-wrap">@Model.Hydrosphere.Code</td>
+                <td>@Model.Hydrosphere.ShortText</td>
+            </tr>
+            @if (!String.IsNullOrEmpty(Model.Climate.Code))
+            {
+                <tr>
+                    <td>Climate</td>
+                    <td class="text-muted no-wrap">@Model.Climate.Code</td>
+                    <td>@Model.Climate.ShortText</td>
+                </tr>
+            }
+
+            <tr>
+                <td>Population</td>
+                <td class="text-muted no-wrap">@Model.Population.Code</td>
+                <td>
+                    <div>@Model.Population.ShortText</div>
+                    <div class="text-muted">@Model.Population.LongText</div>
+                </td>
+            </tr>
+
+            <tr>
+                <td>Government</td>
+                <td class="text-muted no-wrap">@Model.Government.Code</td>
+                <td>@Model.Government.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Law Level</td>
+                <td class="text-muted no-wrap">@Model.LawLevel.Code</td>
+                <td>@Model.LawLevel.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Tech Level</td>
+                <td class="text-muted no-wrap">@Model.TechLevel.Code</td>
+                <td>@Model.TechLevel.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Importance</td>
+                <td class="text-muted no-wrap">@Model.Importance.Code</td>
+                <td>@Model.Importance.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Allegiance</td>
+                <td class="text-muted no-wrap">@Model.Allegiance.Code</td>
+                <td>@Model.Allegiance.ShortText</td>
+            </tr>
+
+            <tr>
+                <td>Trade Codes</td>
+                <td class="text-muted no-wrap">@Model.TradeCodes.Code</td>
+                <td>@Model.TradeCodes.ShortText</td>
+            </tr>
+
+            <tr>
+                <td>Economics</td>
+                <td class="text-muted no-wrap">@Model.Economics.Code</td>
+                <td>
+                    <div>@Model.Economics.ShortText</div>
+                    <div class="text-muted">@Model.Economics.LongText</div>
+                </td>
+            </tr>
+
+
+            <tr>
+                <td>Culture</td>
+                <td class="text-muted no-wrap">@Model.Culture.Code</td>
+                <td>@Model.Culture.ShortText</td>
+            </tr>
+
+
+            <tr>
+                <td>Stars</td>
+                <td class="text-muted no-wrap">@Model.Data.Stellar</td>
+                <td>
+                    <div>@Model.Stellar.StellarDescription</div>
+                    <div>@Model.Stellar.HabitableZoneDescription</div>
+                    <div>@Model.Stellar.OrbitalPeriod</div>
+                    @if (Model.Stellar.SafeJumpWarning != null)
+                    {
+                        <div class="alert alert-danger">
+                            <div>@Model.Stellar.SafeJumpWarning</div>
+                            <div>@Model.Stellar.SafeJumpWarning2</div>
+                        </div>
+                    }
+
+                </td>
+            </tr>
+            @if (!String.IsNullOrEmpty(Model.Orbit.Code))
+            {
+                <tr>
+                    <td>Orbit</td>
+                    <td class="text-muted no-wrap">@Model.Orbit.Code</td>
+                    <td>@Model.Orbit.ShortText</td>
+                </tr>
+            }
+            <tr>
+                <td>System Details</td>
+                <td class="text-muted no-wrap">@Model.System.Code</td>
+                <td>@Model.System.ShortText</td>
+            </tr>
+            <tr>
+                <td colspan="3">
+                    <div class="display-3 text-muted m-1">GM Notes</div>
+                    <textarea rows="20" class="form-control" asp-for="Data.GMNotes"></textarea>
+                    <button class="btn btn-primary btn-sm m-1" type="submit">Update Notes</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+}
+<div style="clear:both"></div>
+
+<script type="text/javascript">
+    function SectorImageClick(e) {
+        // Given the size of the image, determine which hex the user clicked.
+        // The image has a margin around it which must be ignored
+        // The hexes may be vertically offset depending on whether this is an even or odd numbered subsector
+        // Image is 505x560 pixels (at 64px/pc)
+        // There is a 12px margin-x and margin-y
+        // Hexes 64px high, with a spacing of 56px
+
+        var clickx = e.offsetX - 12; // Hit Test origin is at the center of the image
+        var hexx = Math.trunc(clickx / 56);
+
+        var clicky = e.offsetY - 12; // Hit Test origin is at the center of the image
+        if ((Math.abs(hexx) % 2) == 1) {
+            // Adjust by half the height of the hex
+            if ((Math.trunc(Number(@Model.Data.Hex) / 100) % 2) == 1)
+                clicky -= 32;
+            else
+                clicky += 32;
+        }
+
+        var hexy = Math.trunc(clicky / 64);
+
+        // Using this system's HexNumber as the origin, determine the X and Y offset
+        hexx += Math.trunc(Number(@Model.Data.Hex) / 100) - 4;
+        hexy += Math.trunc(Number(@Model.Data.Hex) % 100) - 4;
+
+        var hex = ("00" + hexx).slice(-2) + ("00" + hexy).slice(-2);
+        console.log("Hex Clicked", hex, "at", clickx, ",", clicky);
+
+        document.location.assign("/@Model.Sector.Milieu/@Model.Sector.DefaultName/@Model.Subsector.Name/" + hex);
+    }
+</script>

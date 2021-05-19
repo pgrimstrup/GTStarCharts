@@ -1,0 +1,99 @@
+﻿<Window x:Class="PanasonicNZ.WPF.FileReplaceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PanasonicNZ.WPF"
+        mc:Ignorable="d"
+        Title="Replace File" ResizeMode="NoResize" ShowInTaskbar="False" SizeToContent="WidthAndHeight" Background="#1c1c1c">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PanasonicNZ.WPF;component/Styles/Flat.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="BigFlatButton" TargetType="Button" >
+                <Setter Property="Background" Value="Transparent"></Setter>
+                <Setter Property="BorderBrush" Value="Transparent"></Setter>
+                <Setter Property="BorderThickness" Value="0"></Setter>
+                <Setter Property="HorizontalAlignment" Value="Stretch"></Setter>
+                <Setter Property="HorizontalContentAlignment" Value="Left"></Setter>
+                <Setter Property="Padding" Value="8"></Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border Background="{TemplateBinding Background}">
+                                <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalAlignment}" VerticalAlignment="{TemplateBinding VerticalAlignment}" />
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="{StaticResource SecondaryColorBrush}"></Setter>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+        </ResourceDictionary>
+
+    </Window.Resources>
+    <StackPanel Width="450">
+        <StackPanel Margin="20,10">
+            <StackPanel Margin="0,8,0,10">
+                <TextBlock FontSize="15px" Foreground="{StaticResource AccentTextBrush}">There is already a file with the same name in this location</TextBlock>
+                <TextBlock FontSize="11px" Foreground="{StaticResource IdealForegroundColorBrush}">Select the action you want to take</TextBlock>
+            </StackPanel>
+            <Button Style="{StaticResource BigFlatButton}" Click="CopyAndReplace_Click">
+                <StackPanel>
+                    <TextBlock FontSize="15px" Foreground="{StaticResource AccentTextBrush}" Text="{Binding ActionAndReplace}"></TextBlock>
+                    <TextBlock FontSize="11px" TextWrapping="Wrap">Replace the file in the destination folder with the file from the source folder.</TextBlock>
+                    <WrapPanel>
+                        <Image Width="78" Height="64" Source="{Binding SourceThumbnail}"></Image>
+                        <StackPanel>
+                            <TextBlock FontSize="11px" FontWeight="Bold" Text="{Binding SourceFilename}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding SourceFileType}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding SourceFileSize}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding SourceModified}"></TextBlock>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource BigFlatButton}" Click="DontCopy_Click">
+                <StackPanel>
+                    <TextBlock FontSize="15px" Foreground="{StaticResource AccentTextBrush}" Text="{Binding DontAction}">Don't copy</TextBlock>
+                    <TextBlock FontSize="11px" TextWrapping="Wrap">The existing file will not be replaced.</TextBlock>
+                    <WrapPanel>
+                        <Image Width="78" Height="64" Source="{Binding TargetThumbnail}"></Image>
+                        <StackPanel>
+                            <TextBlock FontSize="11px" FontWeight="Bold" Text="{Binding TargetFilename}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding TargetFileType}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding TargetFileSize}"></TextBlock>
+                            <TextBlock FontSize="11px" Text="{Binding TargetModified}"></TextBlock>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource BigFlatButton}" Click="CopyNewer_Click" Visibility="{Binding IsActionChangedVisible, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock FontSize="15px"  Foreground="{StaticResource AccentTextBrush}" Text="{Binding ActionChangedFiles}">Copy only those files that have changed</TextBlock>
+                    <TextBlock FontSize="11px" TextWrapping="Wrap">Files in the destination folder that are older than the ones in the source folder will be replaced.</TextBlock>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+        <Border BorderThickness="0,1,0,0" BorderBrush="Silver">
+            <Grid Margin="8">
+                <CheckBox IsChecked="{Binding ApplyToAll}" VerticalAlignment="Center" Visibility="{Binding HasMultipleConflicts, Converter={StaticResource BoolToVisibility}}">
+                    <WrapPanel>
+                        <TextBlock FontSize="11px" Margin="0,0,4,0">Do this for the next</TextBlock>
+                        <TextBlock FontSize="11px" Margin="0,0,4,0" Text="{Binding ConflictCount, StringFormat=n0}"></TextBlock>
+                        <TextBlock FontSize="11px" Margin="0,0,4,0">conflicts</TextBlock>
+                    </WrapPanel>
+                </CheckBox>
+                <WrapPanel HorizontalAlignment="Right" >
+                    <Button MinWidth="75" Padding="8,3" Margin="8,0,0,0" IsCancel="True" Click="Cancel_Click">Cancel</Button>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+    </StackPanel>
+</Window>

@@ -1,0 +1,45 @@
+﻿@page "/randomcharacter/{handler?}"
+@model GTStarCharts.Pages.RandomCharacterModel
+@{
+    ViewData["Title"] = "Random Character Generator";
+}
+
+<div class="text-center">
+    <h3 class="display-4">Random Character Generator</h3>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <label>Career</label>
+        <select class="form-control">
+            <option>Captain</option>
+            <option>Pilot</option>
+            <option>Navigator</option>
+            <option>Engineer</option>
+            <option>Gunner</option>
+            <option>Marine</option>
+            <option>Assassin</option>
+            <option>Thug</option>
+            <option>Ordinary</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label>Point Total</label>
+        <select class="form-control">
+            <option>50</option>
+            <option>75</option>
+            <option>100</option>
+            <option>125</option>
+            <option>150</option>
+            <option>175</option>
+            <option>200</option>
+            <option>225</option>
+            <option>250</option>
+            <option>275</option>
+            <option>300</option>
+        </select>
+    </div>
+    <div class="col-md-5">
+        <button class="btn btn-primary" style="margin-top: 2.1em">Generate</button>
+    </div>
+</div>

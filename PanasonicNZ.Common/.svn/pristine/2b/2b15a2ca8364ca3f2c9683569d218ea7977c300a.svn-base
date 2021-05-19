@@ -1,0 +1,478 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Data.SqlClient;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace PanasonicNZ.Common.Upgrade
+{
+    public class DbUpgrade
+    {
+        internal DbContext Context { get; }
+
+        public string DbName { get; private set; }
+        public int DbId { get; private set; }
+        public DateTime? DbCreatedDate { get; private set; }
+        public bool DatabaseExists { get; private set; }
+        public bool UpgradeNeeded { get; private set; }
+        public Dictionary<string, DbTableInfo> Tables { get; }
+
+        public DbUpgrade(DbContext context)
+        {
+            Context = context;
+            DatabaseExists = Context.DatabaseExists(out int dbid, out string name, out DateTime crdate);
+            Tables = new Dictionary<string, DbTableInfo>(StringComparer.InvariantCultureIgnoreCase);
+
+            if (DatabaseExists)
+            {
+                DbId = dbid;
+                DbName = name;
+                DbCreatedDate = crdate;
+                UpgradeNeeded = CheckUpgradeNeeded();
+            }
+            else
+            {
+                DbName = name;
+                UpgradeNeeded = true;
+            }
+        }
+
+        public void UpgradeDatabase(Action<DbUpgrade> upgradeAction)
+        {
+            // Does the named database exist? If not, then attempt to create it.
+            if (!DatabaseExists)
+            {
+                if (Context.CreateDatabase(out int dbid, out string name, out DateTime crdate))
+                {
+                    DbId = dbid;
+                    DbName = name;
+                    DbCreatedDate = crdate;
+                    DatabaseExists = true;
+                }
+            }
+
+            // Load table info from the database
+            var dbinfo = new DbInfoLoader();
+            dbinfo.LoadInfo(Context, Tables);
+
+            // Updgrade the database based on the current Model
+            UpgradeDatabaseFromModel();
+
+            // Call the provided action if needed
+            upgradeAction?.Invoke(this);
+
+            // Upgrade again based on changes made by the upgrade action
+            UpgradeDatabaseFromModel();
+
+            UpgradeDatabaseCompleted();
+        }
+
+        public DbTableInfo<TEntity> Table<TEntity>() where TEntity:class
+        {
+            var table = Tables.Values.FirstOrDefault(t => t.EntityType == typeof(TEntity));
+            if (table == null)
+                return null;
+
+            return new DbTableInfo<TEntity>(table);
+        }
+
+        private void UpgradeDatabaseCompleted()
+        {
+            Context.CreatePanaUpgradeTable();
+            Context.AddPanaUpgrade();
+        }
+
+        public void RefreshDataCompleted()
+        {
+            Context.CreatePanaUpgradeTable();
+            Context.AddDataRefresh();
+        }
+
+        private bool CheckUpgradeNeeded()
+        {
+            // If there is no __PanaUpgrade table, then an upgrade is needed
+            if (!Context.TableExists("__PanaUpgrade"))
+                return true;
+
+            // Calculate the DbContext Schema value
+            var model = Context.CompressModel();
+            if (Context.IsUpgradeNeeded())
+                return true;
+
+            return false;
+        }
+
+        public DateTime? GetLastRefresh()
+        {
+            if (UpgradeNeeded) return null;
+            return Context.GetLastRefreshTime(); // refresh data once per day
+        }
+
+        private void UpgradeDatabaseFromModel()
+        {
+            try
+            {
+                // First create all tables and indexes
+                foreach (var table in Tables.Values)
+                {
+                    if (!table.ExistsInDatabase && table.ExistsInModel)
+                        CreateTable(table);
+                    else if (table.AlterNeeded)
+                        AlterTable(table);
+
+                    if (table.ExistsInDatabase && table.ExistsInModel)
+                        UpgradeIndexes(table);
+                }
+
+                // Now we can do foreign keys
+                foreach(var table in Tables.Values)
+                {
+                    if (table.ExistsInDatabase && table.ExistsInModel)
+                        UpgradeForeignKeys(table);
+                }
+            }
+            catch(Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(ex.ToString());
+                throw;
+            }
+        }
+
+        private void CreateTable(DbTableInfo table)
+        {
+            if(!table.SchemaName.Equals("dbo", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Context.EnsureOpen();
+                using (var cmd = Context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = $"IF NOT EXISTS(SELECT 1 FROM sys.schemas WHERE Name = '{table.SchemaName}') EXEC('CREATE SCHEMA [{table.TableName}]')";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"CREATE TABLE [{table.SchemaName}].[{table.TableName}](");
+
+            // Create the table using properties in declaration order
+            var props = table.GetPropertyCreationOrder();
+            var index = 0;
+            foreach (var prop in props)
+            {
+                DbColumnInfo col = table.Columns.Values.FirstOrDefault(c => c.PropertyName == prop);
+                if(col != null)
+                {
+                    if(index > 0)
+                        sb.AppendLine(",");
+                    sb.Append($"    {GetColumnSql(col)}");
+                    index++;
+                }
+            }
+            sb.AppendLine();
+            sb.AppendLine(")");
+
+            Context.EnsureOpen();
+            using (var cmd = Context.Database.Connection.CreateCommand())
+            {
+                cmd.CommandText = sb.ToString();
+                cmd.ExecuteNonQuery();
+
+                // Flag the table and columns as existing in the database and not requiring any changes
+                table.ExistsInDatabase = true;
+                foreach (var col in table.Columns.Values)
+                {
+                    if (col.ExistsInModel)
+                    {
+                        col.ExistsInDatabase = true;
+                        col.Altered = false;
+                    }
+                }
+            }
+        }
+
+        private void AlterTable(DbTableInfo table)
+        {
+
+            StringBuilder sb = new StringBuilder();
+            foreach(var col in table.Columns.Values)
+            {
+                if(col.Altered)
+                {
+                    // Drop any indexes containing this column - they will be recreated later
+                    DropRelatedIndexes(col);
+
+                    if(col.ExistsInDatabase)
+                        sb.AppendLine($"ALTER TABLE [{table.SchemaName}].[{table.TableName}] ALTER COLUMN {GetColumnSql(col)};");
+                    else
+                        sb.AppendLine($"ALTER TABLE [{table.SchemaName}].[{table.TableName}] ADD {GetColumnSql(col)};");
+                }
+            }
+
+            Context.EnsureOpen();
+            using (var cmd = Context.Database.Connection.CreateCommand())
+            {
+                cmd.CommandText = sb.ToString();
+                cmd.ExecuteNonQuery();
+
+                // Flag the columns as unaltered, and now existing in the database
+                foreach (var col in table.Columns.Values)
+                {
+                    col.Altered = false;
+                    col.ExistsInDatabase = true;
+                }
+            }
+        }
+
+        private void DropRelatedIndexes(DbColumnInfo col)
+        {
+            foreach(var index in col.Table.Indexes)
+            {
+                if(index.Columns.ContainsKey(col.ColumnName) && index.Exists)
+                {
+                    Context.EnsureOpen();
+                    using (var cmd = Context.Database.Connection.CreateCommand())
+                    {
+                        if(index.IsPrimaryKey)
+                            cmd.CommandText = $"ALTER TABLE [{col.Table.SchemaName}].[{col.Table.TableName}] DROP CONSTRAINT [{index.IndexName}]";
+                        else
+                            cmd.CommandText = $"DROP INDEX [{col.Table.SchemaName}].[{col.Table.TableName}].[{index.IndexName}]";
+                        cmd.ExecuteNonQuery();
+
+                        index.Exists = false;
+                    }
+                }
+            }
+        }
+
+        private void UpgradeIndexes(DbTableInfo table)
+        {
+            foreach(var index in table.Indexes)
+            {
+                UpgradeIndex(index);
+            }
+        }
+
+        private void UpgradeIndex(DbIndexInfo index)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (index.Exists && index.Removed)
+            {
+                // Drop existing
+                sb.AppendLine($"{GetDropIndexSql(index)};");
+            }
+            else if (!index.Exists)
+            {
+                // Create new
+                sb.AppendLine($"{GetCreateIndexSql(index)};");
+            }
+            else if (index.Altered)
+            {
+                // Recreate
+                sb.AppendLine($"{GetDropIndexSql(index)};");
+                sb.AppendLine($"{GetCreateIndexSql(index)};");
+            }
+
+            if (sb.Length > 0)
+            {
+                Context.EnsureOpen();
+                using (var cmd = Context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = sb.ToString();
+                    cmd.ExecuteNonQuery();
+
+                    index.Exists = !index.Removed;
+                    index.Altered = false;
+                    index.Removed = false;
+                }
+            }
+        }
+
+        private void UpgradeForeignKeys(DbTableInfo table)
+        {
+            foreach(var fk in table.References)
+            {
+                UpgradeForeignKey(fk);
+
+                CreateSupportingIndex(table, fk.SourceColumns);
+
+                if(Tables.TryGetValue(fk.TargetTableName, out DbTableInfo targettable))
+                {
+                    CreateSupportingIndex(targettable, fk.TargetColumns);
+                }
+            }
+        }
+
+        private void CreateSupportingIndex(DbTableInfo table, string[] columns)
+        {
+            var index = table.FindIndex(columns);
+            if(index == null)
+            {
+                index = new DbIndexInfo(table);
+                table.Indexes.Add(index);
+                foreach (string column in columns)
+                    index.Columns.Add(column, new DbIndexColumnInfo { ColumnName = column });
+
+                UpgradeIndex(index);
+            }
+        }
+
+        private void UpgradeForeignKey(DbReferenceInfo fk)
+        {
+            if (fk.ExistsInDatabase && fk.ExistsInModel)
+                return;
+
+            if(!fk.ExistsInModel && fk.ExistsInDatabase && fk.Dropped)
+            {
+                // Forced removal from the database. Otherwise we leave all unknown FKs in the DB
+                Context.EnsureOpen();
+                using (var cmd = Context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = GetDropForeginKeySql(fk);
+                    cmd.ExecuteNonQuery();
+
+                    fk.ExistsInDatabase = false;
+                }
+            }
+
+            if (fk.ExistsInModel && !fk.ExistsInDatabase)
+            {
+                // Needs to be added to the database
+                Context.EnsureOpen();
+                using (var cmd = Context.Database.Connection.CreateCommand())
+                {
+                    cmd.CommandText = GetCreateForeginKeySql(fk);
+                    cmd.ExecuteNonQuery();
+
+                    fk.ExistsInDatabase = true;
+                }
+            }
+        }
+
+        private string GetDropForeginKeySql(DbReferenceInfo fk)
+        {
+            return $"ALTER TABLE [{fk.SourceSchemaName}].[{fk.SourceTableName}] DROP CONSTRAINT [{fk.ForeignKeyName}]";
+        }
+
+        private string GetCreateForeginKeySql(DbReferenceInfo fk)
+        {
+            string[] source = fk.SourceColumns.Select(s => $"[{s}]").ToArray();
+            string[] target = fk.TargetColumns.Select(s => $"[{s}]").ToArray();
+
+            string sourcecols = String.Join(", ", source);
+            string targetcols = String.Join(", ", target);
+
+            // We will force any non-matching key values to be null
+
+            return $@"
+UPDATE [{fk.SourceSchemaName}].[{fk.SourceTableName}] SET [{fk.SourceColumns.First()}] = NULL
+WHERE [{fk.SourceColumns.First()}] NOT IN (SELECT [{fk.TargetColumns.First()}] FROM [{fk.TargetSchemaName}].[{fk.TargetTableName}]);
+
+ALTER TABLE [{fk.SourceSchemaName}].[{fk.SourceTableName}] 
+ADD CONSTRAINT [{fk.ForeignKeyName}] 
+FOREIGN KEY ({sourcecols}) 
+REFERENCES [{fk.TargetSchemaName}].[{fk.TargetTableName}] ({targetcols})";
+        }
+
+        private string GetDropIndexSql(DbIndexInfo index)
+        {
+            if (index.IsPrimaryKey)
+                return $"ALTER TABLE [{index.Table.SchemaName}].[{index.Table.TableName}] DROP CONSTRAINT [{index.IndexName}]";
+            else
+                return $"DROP INDEX [{index.Table.SchemaName}].[{index.Table.TableName}].[{index.IndexName}]";
+        }
+
+        private string GetCreateIndexSql(DbIndexInfo index)
+        {
+            if (index.IsPrimaryKey)
+            {
+                string clustered = index.IsClustered ? "CLUSTERED" : "NONCLUSTERED";
+                var columns = index.Columns.Values.Where(i => !i.IsIncluded).Select(i => $"[{i.ColumnName}]").ToArray();
+                var idxcols = String.Join(", ", columns);
+
+                if (String.IsNullOrEmpty(index.IndexName))
+                    index.IndexName = $"PK_{index.Table.TableName}";
+
+                return $"ALTER TABLE [{index.Table.SchemaName}].[{index.Table.TableName}] ADD CONSTRAINT [{index.IndexName}] PRIMARY KEY {clustered} ({idxcols})";
+            }
+            else
+            {
+                string clustered = index.IsClustered ? "CLUSTERED" : "";
+                string unique = index.IsUnique ? "UNIQUE" : "";
+
+                var columns = index.Columns.Values.Where(i => !i.IsIncluded).Select(i => $"[{i.ColumnName}]{(i.IsDescending ? " DESC" : "")}").ToArray();
+                var idxcols = String.Join(", ", columns);
+
+                if (String.IsNullOrEmpty(index.IndexName))
+                {
+                    var names = String.Join("", index.Columns.Values.Where(i => !i.IsIncluded).Select(i => i.ColumnName));
+                    index.IndexName = $"IX_{index.Table.TableName}_{names}";
+                    if (index.IndexName.Length > 64)
+                        index.IndexName = index.IndexName.Substring(0, 64);
+                }
+
+                var included = index.Columns.Values.Where(i => i.IsIncluded).Select(i => $"[{i.ColumnName}]").ToArray();
+                if (included.Length > 0)
+                {
+                    var inccols = String.Join(", ", included);
+                    return $"CREATE {clustered} {unique} INDEX [{index.IndexName}] ON [{index.Table.SchemaName}].[{index.Table.TableName}]({idxcols}) INCLUDE ({inccols})";
+                }
+                else
+                {
+                    return $"CREATE {clustered} {unique} INDEX [{index.IndexName}] ON [{index.Table.SchemaName}].[{index.Table.TableName}]({idxcols})";
+                }
+            }
+        }
+
+        private string GetColumnSql(DbColumnInfo col)
+        {
+            StringBuilder sql = new StringBuilder();
+
+            sql.Append($"[{col.ColumnName}] [{col.Type.ToString().ToUpper()}]");
+
+            // Add length if needed
+            switch (col.Type)
+            {
+                case SqlDbType.Binary:
+                case SqlDbType.VarBinary:
+                case SqlDbType.Char:
+                case SqlDbType.VarChar:
+                case SqlDbType.NChar:
+                case SqlDbType.NVarChar:
+                    if (col.Length == null || col.Length == -1)
+                        sql.Append($"(MAX)");
+                    else
+                        sql.Append($"({col.Length})");
+                    break;
+            }
+
+            // Add null/not null
+            sql.Append(col.IsNullable ? " NULL" : " NOT NULL");
+
+            if(col.IsIdentity)
+                sql.Append($" IDENTITY({col.IdentitySeed}, {col.IdentityIncrement})");
+
+            // Add Default Value
+            if (col.DefaultValueExpression != null)
+            {
+                col.DefaultConstraintName = $"DF_{col.Table.TableName}_{col.ColumnName}";
+                sql.Append($" CONSTRAINT [{col.DefaultConstraintName}] DEFAULT {col.DefaultValueExpression}");
+            }
+
+            return sql.ToString();
+        }
+
+        private string GetPrimaryKeySql(DbTableInfo table)
+        {
+            var pkcolumns = table.Columns.Values.Where(c => c.IsPrimaryKey).OrderBy(c => c.Index).ToArray();
+            var pkfields = String.Join(", ", pkcolumns.Select(p => p.ColumnName));
+
+            var pkindex = table.Indexes.FirstOrDefault(i => i.IsPrimaryKey);
+            var clustered = pkindex.IsClustered ? "CLUSTERED" : "NONCLUSTERED";
+
+            return $"CONSTRAINT [PK_{table.TableName}] PRIMARY KEY {clustered} ({pkfields})";
+        }
+
+    }
+}

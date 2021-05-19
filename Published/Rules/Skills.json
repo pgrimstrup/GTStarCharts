@@ -1,0 +1,47 @@
+{
+  "SkillTypes": [
+    {
+      "Type": "E",
+      "Cost": "1/2/4",
+      "BaseLevel": "+0"
+    },
+    {
+      "Type": "A",
+      "Cost": "1/2/4",
+      "BaseLevel": "-1"
+    },
+    {
+      "Type": "H",
+      "Cost": "1/2/4",
+      "BaseLevel": "-2"
+    },
+    {
+      "Type": "VH",
+      "Cost": "1/2/4",
+      "BaseLevel": "-3"
+    }
+  ],
+  "Skills": [
+    {
+      "Name": "Accounting",
+      "Type": "IQ/H"
+    },
+    {
+      "Name": "Acrobatics",
+      "Type": "DX/H"
+    },
+    {
+      "Name": "Acting",
+      "Type": "IQ/A"
+    },
+    {
+      "Name": "Administrtion",
+      "Type": "IQ/A"
+    },
+    {
+      "Name": "Guns (Pistol)",
+      "Type": "DX/E"
+    }
+
+  ]
+}

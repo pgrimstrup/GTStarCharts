@@ -1,0 +1,82 @@
+﻿@page "/{milieu}/{sector}/{subsector}"
+@model GTStarCharts.Pages.SubsectorModel
+@{
+    ViewData["Title"] = this.Model.Subsector.Name + " Subsector";
+}
+
+
+<div>
+    <div class="float-left">
+        @foreach (var row in Model.Surrounds.Rows)
+        {
+            <div>
+                @foreach (var neighbor in row)
+                {
+                    <a class="btn btn-sm @(neighbor.IsCurrent ? "btn-dark" : "btn-primary") text-truncate m-1" style="width: 100px"
+                       href="@Url.Page("/subsector", new { milieu = neighbor.Milieu, sector = neighbor.SectorName, subsector = neighbor.SubsectorName })">
+                        @neighbor.SubsectorName
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="float-right">
+        @foreach (var row in Model.SubsectorRows)
+        {
+            <div>
+                @foreach (var subsector in row)
+                {
+                    <a class="btn btn-sm btn-primary text-truncate m-1" style="width: 100px"
+                       href="@Url.Page("/subsector", new { milieu = subsector.Milieu, sector = subsector.SectorName, subsector = subsector.SubsectorName })">
+                        @subsector.Code) @subsector.SubsectorName
+                    </a>
+                }
+            </div>
+
+        }
+    </div>
+
+    <div style="margin: 0 auto; text-align:center">
+        <h3 class="display-4">@Model.Subsector.Name (Subsector @Model.Subsector.Code), <a href="@Url.Page("/sector", new { milieu = Model.Sector.Milieu, sector = Model.Sector.DefaultName })">@Model.Sector.DefaultName</a></h3>
+        <img style="cursor: pointer" src="/api/Images/@Model.Subsector.Id" onclick="SectorImageClick(event)" />
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    function SectorImageClick(e) {
+        // Given the size of the image, determine which hex the user clicked.
+        // The image has a margin around it which must be ignored
+        // The hexes may be vertically offset depending on whether this is an even or odd numbered subsector
+        // Image is 942x1639 pixels (at 128px/pc)
+        // There is a 9px margin-x, and a 12px margin-y
+        // Hexes are 148px wide across the middle and 128px high, with a spacing of 114px
+
+        var clickx = e.offsetX - 9 - 10; // Adjust by a bit to center the hit target area
+        var hexx = Math.trunc(clickx / 114);
+
+        var clicky = e.offsetY - 13;
+        if ((hexx % 2) == 1)
+            clicky -= 64; // Adjust by half the height of the hex
+
+
+        if (clickx < 0 || clicky < 0)
+            console.log("You clicked an invalid hex, at point", clickx, ",", clicky);
+        else {
+            var hexy = Math.trunc(clicky / 128);
+
+            // Each subsector is 8x10 hexes. Determine the X and Y position of the subsector within the sector
+            var indexNumber = Number(@Model.Subsector.IndexNumber);
+            var ssx = indexNumber % 4;
+            var ssy = Math.trunc(indexNumber / 4);
+
+            hexx += (ssx * 8) + 1;
+            hexy += (ssy * 10) + 1;
+
+            var hex = ("00" + hexx).slice(-2) + ("00" + hexy).slice(-2);
+
+            document.location.assign(document.location.href + "/" + hex);
+        }
+    }
+</script>

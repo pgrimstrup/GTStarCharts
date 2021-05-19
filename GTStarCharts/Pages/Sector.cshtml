@@ -1,0 +1,68 @@
+﻿@page "/{milieu}/{sector}"
+@model GTStarCharts.Pages.SectorModel
+@{
+    ViewData["Title"] = this.Model.Sector.DefaultName + " Sector";
+}
+
+<div class="text-center">
+    <div class="float-left">
+        @foreach (var row in Model.Surrounds.Rows)
+        {
+            <div>
+                @foreach (var neighbor in row)
+                {
+                    <a class="btn btn-sm @(neighbor.IsCurrent ? "btn-dark" : "btn-primary") text-truncate m-1" style="width: 100px"
+                       href="@Url.Page("/sector", new { milieu = neighbor.Milieu, sector = neighbor.SectorName })">
+                        @neighbor.SectorName
+                    </a>
+                }
+            </div>
+
+        }
+    </div>
+
+
+    <h3 class="display-4">@Model.Sector.DefaultName Sector</h3>
+    @if (Model.Subsectors.Length == 16)
+    {
+    <img src="/api/Images/@Model.Sector.Id" style="cursor: pointer" onclick="SectorImageClick(event)" />
+    }
+    else
+    {
+        <div class="text-center">
+            <p>No sector data available.</p>
+        </div>
+    }
+</div>
+
+
+<script type="text/javascript">
+
+     var subsectors = new Array();
+
+    @if (Model.Subsectors.Length == 16)
+    {
+        // Add the url to each subsector to the javascript
+        foreach(var subsector in Model.Subsectors)
+                {
+<text>
+        subsectors.push("@Url.Page("/Subsector", new { milieu = Model.Sector.Milieu, sector = Model.Sector.DefaultName, subsector = subsector.Name })");
+</text>
+
+                }
+    }
+
+    function SectorImageClick(e) {
+        // The IDs of the 16 subsectors in this sector
+        // The image is a 4x4 subsector grid - determine which subsector was clicked
+        var width = e.srcElement.width / 4;
+        var height = e.srcElement.height / 4;
+        var x = Math.trunc(e.offsetX / width);
+        var y = Math.trunc(e.offsetY / height);
+        var index = y * 4 + x;
+
+        // If valid, then navigate to the subsector
+        if(index >= 0 && index < subsectors.length)
+            document.location.assign(subsectors[index]);
+    }
+</script>
