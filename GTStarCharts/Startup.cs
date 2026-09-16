@@ -28,7 +28,10 @@ namespace GTStarCharts
         {
             services.AddDbContext<GTStarData.GTStarDbContext>(options =>
             {
-                string connectionString = "Data Source=(local);Initial Catalog=GTStarCharts;Integrated Security=true";
+                string connectionString = Configuration.GetConnectionString("GTStarCharts");
+                if (string.IsNullOrEmpty(connectionString))
+                    throw new InvalidOperationException("Connection string 'GTStarCharts' was not found. Set ConnectionStrings:GTStarCharts in appsettings.json or user secrets.");
+
                 options.UseSqlServer(connectionString);
             });
 
