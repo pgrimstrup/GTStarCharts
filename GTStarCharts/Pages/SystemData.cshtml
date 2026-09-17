@@ -11,8 +11,7 @@
     </h3>
 </div>
 
-@using (Html.BeginForm(FormMethod.Post))
-{
+<form method="post">
     <div class="float-right" style="margin-left: 10px">
         <div class="text-right">
             @if (Model.TravelZone.Code == "A")
@@ -199,7 +198,7 @@
             </tr>
         </table>
     </div>
-}
+</form>
 <div style="clear:both"></div>
 
 <script type="text/javascript">

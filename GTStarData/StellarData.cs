@@ -90,8 +90,11 @@ namespace GTStarData
         {
             StellarData data = new StellarData();
 
-            var bits = stellarInfo.Split(' ');
-            for (int i = 0; i < bits.Length; i += 2)
+            if (string.IsNullOrWhiteSpace(stellarInfo))
+                return data;
+
+            var bits = stellarInfo.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i + 1 < bits.Length; i += 2)
             {
                 if (Enum.TryParse(bits[i], out SpectralType type) && Enum.TryParse(bits[i + 1], out StellarClass cls))
                 {

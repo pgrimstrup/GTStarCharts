@@ -29,13 +29,13 @@ namespace GTStarData
         {
             int result = 0;
             for (int i = 0; i < count; i++)
-                result += r.Next(1, 6);
+                result += r.Next(1, 7);
             return result;
         }
 
         public static int D66(this Random r, int mod1 = 0, int mod2 = 0)
         {
-            return (r.Next(1, 6) + mod1).Min(0).Max(9) * 10 + (r.Next(1, 6) + mod2).Min(0).Max(9);
+            return (r.Next(1, 7) + mod1).Min(0).Max(9) * 10 + (r.Next(1, 7) + mod2).Min(0).Max(9);
         }
 
         public static int Min(this int value, int min)

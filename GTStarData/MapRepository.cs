@@ -21,12 +21,21 @@ namespace GTStarData
         public static void RefreshSectorDetails(this GTStarDbContext context, MapAPI api, Sector sector)
         {
             var data = api.GetSectorData(sector.Milieu, sector.DefaultName);
-            context.UpdateSectorBorders(sector, data.Borders);
-            context.UpdateSectorLabels(sector, data.Labels);
-            context.UpdateSectorRoutes(sector, data.Routes);
-            context.UpdateSubsectors(sector, data.Subsectors);
-            context.UpdateDataSource(sector, data.DataFile);
-            context.UpdateDataProducts(sector, data.Products);
+            if (data == null)
+                return;
+
+            if (data.Borders != null)
+                context.UpdateSectorBorders(sector, data.Borders);
+            if (data.Labels != null)
+                context.UpdateSectorLabels(sector, data.Labels);
+            if (data.Routes != null)
+                context.UpdateSectorRoutes(sector, data.Routes);
+            if (data.Subsectors != null)
+                context.UpdateSubsectors(sector, data.Subsectors);
+            if (data.DataFile != null)
+                context.UpdateDataSource(sector, data.DataFile);
+            if (data.Products != null)
+                context.UpdateDataProducts(sector, data.Products);
 
             context.SaveChanges();
 
@@ -68,6 +77,9 @@ namespace GTStarData
 
         public static void UpdateSectorBorders(this GTStarDbContext context, Sector sector, IEnumerable<MapBorder> borders)
         {
+            if (borders == null)
+                return;
+
             var found = context.FindSectorBorders(sector.Id).ToList();
             foreach (var border in borders)
             {
@@ -91,6 +103,9 @@ namespace GTStarData
 
         public static void UpdateSectorLabels(this GTStarDbContext context, Sector sector, IEnumerable<MapLabel> labels)
         {
+            if (labels == null)
+                return;
+
             var found = context.FindSectorLabels(sector.Id).ToList();
             foreach (var label in labels)
             {
@@ -113,6 +128,9 @@ namespace GTStarData
 
         public static void UpdateSectorRoutes(this GTStarDbContext context, Sector sector, IEnumerable<MapRoute> routes)
         {
+            if (routes == null)
+                return;
+
             var found = context.FindSectorRoutes(sector.Id).ToList();
             foreach (var route in routes)
             {
@@ -138,6 +156,9 @@ namespace GTStarData
 
         public static void UpdateSubsectors(this GTStarDbContext context, Sector sector, IEnumerable<MapSubsector> subsectors)
         {
+            if (subsectors == null)
+                return;
+
             var found = context.FindSubsectors(sector.Id).ToList();
             foreach (var subsect in subsectors)
             {
@@ -159,6 +180,9 @@ namespace GTStarData
 
         public static void UpdateSystemData(this GTStarDbContext context, Sector sector, MapSystemData worlddata)
         {
+            if (worlddata?.Worlds == null)
+                return;
+
             foreach (var world in worlddata.Worlds)
             {
                 var found = context.FindSystemData(sector.Id, world.Hex);
@@ -205,6 +229,9 @@ namespace GTStarData
 
         public static void UpdateDataSource(this GTStarDbContext context, Sector sector, MapDataFile source)
         {
+            if (source == null)
+                return;
+
             var found = context.FindDataSources(sector.Id).ToList();
             var ds = found.FirstOrDefault(e => e.Source == source.Source);
             if (ds == null)
@@ -223,6 +250,9 @@ namespace GTStarData
 
         public static void UpdateDataProducts(this GTStarDbContext context, Sector sector, IEnumerable<MapProduct> products)
         {
+            if (products == null)
+                return;
+
             var found = context.FindDataProducts(sector.Id).ToList();
             foreach (var product in products)
             {

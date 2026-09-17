@@ -13,7 +13,7 @@ namespace GTStarData
         public GTStarDbContext(DbContextOptions options)
             : base(options)
         {
-
+            this.Database.EnsureCreated();
         }
 
         public virtual DbSet<Sector> Sectors { get; set; }
@@ -36,13 +36,13 @@ namespace GTStarData
             sectors.Property(e => e.Tags).HasMaxLength(NameLength);
             sectors.Property(e => e.ThumbnailContentType).HasMaxLength(CodeLength);
             sectors.Property(e => e.ImageContentType).HasMaxLength(CodeLength);
-            sectors.HasMany(e => e.Names).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Subsectors).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Borders).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Routes).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Labels).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Sources).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
-            sectors.HasMany(e => e.Products).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId);
+            sectors.HasMany(e => e.Names).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Subsectors).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Borders).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Routes).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Labels).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Sources).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            sectors.HasMany(e => e.Products).WithOne(e => e.Sector).HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
 
             var sectornames = model.Entity<SectorName>().ToTable("SectorNames");
             sectornames.HasKey(e => new { e.SectorId, e.SortOrder });
@@ -89,8 +89,8 @@ namespace GTStarData
             systems.Property(e => e.Remarks).HasMaxLength(CodeLength);
             systems.Property(e => e.Zone).HasMaxLength(CodeLength);
             systems.Property(e => e.JumpImageContentType).HasMaxLength(CodeLength);
-            systems.HasOne(e => e.Sector).WithMany().HasForeignKey(e => e.SectorId);
-            systems.HasOne(e => e.Subsector).WithMany(e => e.SystemData).HasForeignKey(e => e.SubsectorId);
+            systems.HasOne(e => e.Sector).WithMany().HasForeignKey(e => e.SectorId).OnDelete(DeleteBehavior.NoAction);
+            systems.HasOne(e => e.Subsector).WithMany(e => e.SystemData).HasForeignKey(e => e.SubsectorId).OnDelete(DeleteBehavior.NoAction);
 
             var sources = model.Entity<DataSource>().ToTable("DataSources");
             sources.HasKey(e => e.Id);

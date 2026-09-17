@@ -182,6 +182,8 @@ namespace GTStarCharts.Controllers
                     return this.NotFound();
 
                 var sector = Data.Sectors.Find(system.SectorId);
+                if (sector == null)
+                    return this.NotFound();
 
                 var image = await Api.GetJumpImage(sector.Milieu, sector.Code, system.Hex);
                 if (image != null)

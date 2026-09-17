@@ -43,13 +43,13 @@ namespace GTStarData
         [NotMapped]
         public string DefaultName
         {
-            get { return Names.FirstOrDefault()?.Name; }
+            get { return Names.OrderBy(n => n.SortOrder).FirstOrDefault()?.Name; }
         }
 
         [NotMapped]
         public string UrlName
         {
-            get { return Names.FirstOrDefault()?.Name?.Replace(" ", "+"); }
+            get { return Names.OrderBy(n => n.SortOrder).FirstOrDefault()?.Name?.Replace(" ", "+"); }
         }
 
         [NotMapped]

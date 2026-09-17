@@ -382,7 +382,7 @@ namespace GTStarData
             if (mapx != 0 || mapy != 0)
             {
                 sector = FindSector(context, subsector.Sector.Milieu, subsector.Sector.X + mapx, subsector.Sector.Y + mapy);
-                if(sector.Subsectors.Count == 0)
+                if (sector != null && sector.Subsectors.Count == 0)
                 {
                     MapAPI api = new MapAPI();
                     context.RefreshSectorDetails(api, sector);

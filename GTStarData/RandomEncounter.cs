@@ -48,7 +48,7 @@ namespace GTStarData
 
             int d1mod = 0;
             int d2mod = 0;
-            string starport = data.UWP.Subcode(UWP.TechLevel);
+            string starport = data.UWP.Subcode(UWP.Starport);
             int lawlevel = data.UWP.Subcode(UWP.LawLevel).ToInt();
             int techlevel = data.UWP.Subcode(UWP.TechLevel).ToInt();
 

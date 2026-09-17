@@ -12,7 +12,7 @@ namespace GTStarCharts.Pages
 {
     public class SectorModel : PageModel
     {
-        private readonly ILogger<IndexModel> Logger;
+        private readonly ILogger<SectorModel> Logger;
         private readonly GTStarDbContext Data;
         private readonly MapAPI Api;
 
@@ -21,7 +21,7 @@ namespace GTStarCharts.Pages
 
         public SurroundingSubsectors Surrounds { get; set; }
 
-        public SectorModel(ILogger<IndexModel> logger, GTStarDbContext data, MapAPI api)
+        public SectorModel(ILogger<SectorModel> logger, GTStarDbContext data, MapAPI api)
         {
             Logger = logger;
             Data = data;
@@ -33,6 +33,9 @@ namespace GTStarCharts.Pages
             try
             {
                 this.Sector = Data.FindSector(milieu, sector);
+                if (this.Sector == null)
+                    return NotFound();
+
                 if (this.Sector.Subsectors.Count == 0)
                     Data.RefreshSectorDetails(Api, this.Sector);
 

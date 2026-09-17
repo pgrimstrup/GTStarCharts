@@ -23,7 +23,7 @@ namespace GTStarCharts.Pages
 
         public void OnGet(Guid sectorId, string hex)  
         {
-            Context.FindSystemData(sectorId, hex);
+            SystemData = Context.FindSystemData(sectorId, hex);
         }
 
         public void  OnPostStarshipEncounter(Guid id)
