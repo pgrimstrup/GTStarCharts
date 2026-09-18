@@ -41,7 +41,7 @@ namespace GTStarCharts.TravellerMap
         public string Tags { get; set; }
         public string Abbreviation { get; set; }
         public MapSectorName[] Names { get; set; }
-        public string Credits { get; set; }
+        public string[] Credits { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
         public MapProduct[] Products { get; set; }

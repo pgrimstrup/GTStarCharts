@@ -19,7 +19,7 @@ namespace GTStarData
         II,  // Bright Giant
         III, // Giant
         IV,  // Subgiant
-        V,    // Main Sequence (Dwarf Giant)
+        V,    // Main Sequence (Dwarf)
         VI,   // Subdwarf
         VII   // White Dwarf
     }
@@ -323,7 +323,7 @@ namespace GTStarData
                 case StellarClass.II: return "Bright Giant";
                 case StellarClass.III: return "Giant";
                 case StellarClass.IV: return "Subgiant";
-                case StellarClass.V: return "Dwarf Giant (Main Sequence)";
+                case StellarClass.V: return "Dwarf (Main Sequence)";
                 case StellarClass.VI: return "Subdwarf";
                 case StellarClass.VII: return "White Dwarf";
                 default: return "Unknown";

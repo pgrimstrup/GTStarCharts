@@ -389,7 +389,7 @@ cargo, roll twice and take the most valuable result.";
                         case 4:
                         case 5:
                             encounter.EncounterName = "Rich Freighter (Medium)";
-                            encounter.EncounterType = EncounterType.SmallFreighter;
+                            encounter.EncounterType = EncounterType.MediumFreighter;
                             encounter.Description = @"This freighter is carrying
 an especially valuable cargo; when rolling for a random
 cargo, roll twice and take the most valuable result.";
@@ -397,7 +397,7 @@ cargo, roll twice and take the most valuable result.";
 
                         case 6:
                             encounter.EncounterName = "Rich Freighter (Heavy)";
-                            encounter.EncounterType = EncounterType.SmallFreighter;
+                            encounter.EncounterType = EncounterType.HeavyFreighter;
                             encounter.Description = @"This freighter is carrying
 an especially valuable cargo; when rolling for a random
 cargo, roll twice and take the most valuable result.";
