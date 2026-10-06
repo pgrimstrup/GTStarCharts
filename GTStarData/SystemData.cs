@@ -57,21 +57,49 @@ namespace GTStarData
         {
             switch (UWP.Subcode(GTStarData.UWP.PlanetSize).ToInt())
             {
-                case 1: return (800 + 2400) / 2;
-                case 2: return (2400 + 4000) / 2;
-                case 3: return (4000 + 6000) / 2;
-                case 4: return (5600 + 7200) / 2;
-                case 5: return (7200 + 8800) / 2;
-                case 6: return (8800 + 10400) / 2;
-                case 7: return (10400 + 12000) / 2;
-                case 8: return (12000 + 13600) / 2;
-                case 9: return (13600 + 15200) / 2;
-                case 10: return (15200 + 16800) / 2;
-                case 11: return (16800 + 18400) / 2;
-                case 12: return 20000;
+                case 1:
+                    return (800 + 2400) / 2;
+                case 2:
+                    return (2400 + 4000) / 2;
+                case 3:
+                    return (4000 + 6000) / 2;
+                case 4:
+                    return (5600 + 7200) / 2;
+                case 5:
+                    return (7200 + 8800) / 2;
+                case 6:
+                    return (8800 + 10400) / 2;
+                case 7:
+                    return (10400 + 12000) / 2;
+                case 8:
+                    return (12000 + 13600) / 2;
+                case 9:
+                    return (13600 + 15200) / 2;
+                case 10:
+                    return (15200 + 16800) / 2;
+                case 11:
+                    return (16800 + 18400) / 2;
+                case 12:
+                    return 20000;
 
             }
             return 1000;
+        }
+
+        /// <summary>
+        /// Nominal diameter of the main world in km from the UWP size code (Size x 1,600 km; Size S = 600 km).
+        /// Returns 0 for asteroid belts (Size 0), rings (Size R) or unknown sizes.
+        /// </summary>
+        public double MainWorldDiameterKm()
+        {
+            var code = UWP.Subcode(GTStarData.UWP.PlanetSize)?.ToUpperInvariant();
+            if (string.IsNullOrEmpty(code) || code == "R")
+                return 0;
+            if (code == "S")
+                return 600;
+
+            int size = code.ToInt();
+            return size > 0 ? size * 1600 : 0;
         }
     }
 }

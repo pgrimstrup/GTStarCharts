@@ -69,7 +69,7 @@ namespace GTStarCharts.Pages
                 if (found == null)
                 {
                     found = DbContext.FindSystemData(Subsector.Id, hex);
-                    if(found == null)
+                    if (found == null)
                         return NotFound();
                 }
 
@@ -79,7 +79,7 @@ namespace GTStarCharts.Pages
 
                 return RedirectToPage();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.LogError(1, ex, $"An error occurred while saving System Data");
                 return StatusCode(500);
@@ -139,13 +139,13 @@ namespace GTStarCharts.Pages
                 Gravity = DbContext.FindTextLookup(TextType.Gravity, "");
 
                 Data.CalculateTradeFactors(Economics);
-                Stellar = StellarDataFactory.Create(Data.Stellar);
+                Stellar = StellarDataFactory.Create(Data.Stellar, Data.MainWorldDiameterKm());
 
                 DbContext.AppendOwnerInformation(Data, TradeCodes);
 
                 return Page();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Logger.LogError(1, ex, $"An error occurred while getting System Data");
                 return StatusCode(500);

@@ -1,5 +1,6 @@
 ﻿@page "/{milieu}/{sector}/{subsector}/{hex}"
 @model GTStarCharts.Pages.SystemDataModel
+@using GTStarData
 @{
 }
 
@@ -202,17 +203,86 @@
                 <td>Stars</td>
                 <td class="text-muted no-wrap">@Model.Data.Stellar</td>
                 <td>
-                    <div>@Model.Stellar.StellarDescription</div>
-                    <div>@Model.Stellar.HabitableZoneDescription</div>
-                    <div>@Model.Stellar.OrbitalPeriod</div>
+                    @if (Model.Stellar.Stars.Count == 0)
+                    {
+                        <div>@Model.Stellar.StellarDescription</div>
+                    }
+                    else
+                    {
+                        <div>@Model.Stellar.Configuration star system</div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mt-1 mb-1">
+                                <thead>
+                                    <tr class="text-muted">
+                                        <th>Star</th>
+                                        <th>Type</th>
+                                        <th class="text-right">Temp (K)</th>
+                                        <th class="text-right">Radius (Sun = 1)</th>
+                                        <th class="text-right">Mass (Sun = 1)</th>
+                                        <th class="text-right">Luminosity (Sun = 1)</th>
+                                        <th class="text-right">Habitable Zone (AU)</th>
+                                        <th class="text-right">Jump Shadow</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var star in Model.Stellar.Stars)
+                                    {
+                                        <tr>
+                                            <td class="no-wrap">@star.Role<br /><span class="text-muted">@star.Code</span></td>
+                                            <td>@star.CommonName<br /><span class="text-muted">@star.ClassName</span></td>
+                                            <td class="text-right">@star.Temperature.ToString("n0")</td>
+                                            <td class="text-right">@StellarDataFactory.FormatValue(star.Radius)<br /><span class="text-muted">@StellarDataFactory.FormatDistance(star.RadiusKm, false)</span></td>
+                                            <td class="text-right">@StellarDataFactory.FormatValue(star.Mass)</td>
+                                            <td class="text-right">@StellarDataFactory.FormatValue(star.Luminosity)</td>
+                                            <td class="text-right no-wrap">@StellarDataFactory.FormatAU(star.InnerHZ) - @StellarDataFactory.FormatAU(star.OuterHZ)</td>
+                                            <td class="text-right">@StellarDataFactory.FormatDistance(star.JumpShadowKm)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @foreach (var star in Model.Stellar.Stars)
+                        {
+                            <div><span class="text-muted">@star.Role (@star.Code):</span> @star.Notes</div>
+                        }
+                        <div class="mt-1">@Model.Stellar.HabitableZoneDescription</div>
+                        <div>@Model.Stellar.OrbitalPeriod</div>
+                        @if (Model.Stellar.TidalLockingDescription != null)
+                        {
+                            <div>@Model.Stellar.TidalLockingDescription</div>
+                        }
+                    }
+                </td>
+            </tr>
+            <tr>
+                <td>Safe Jump</td>
+                <td class="text-muted no-wrap">@StellarDataFactory.FormatDistance(Model.Stellar.SafeJumpDistanceKm, false)</td>
+                <td>
                     @if (Model.Stellar.SafeJumpWarning != null)
                     {
-                        <div class="alert alert-danger">
-                            <div>@Model.Stellar.SafeJumpWarning</div>
-                            <div>@Model.Stellar.SafeJumpWarning2</div>
-                        </div>
+                        <div class="alert alert-danger mb-1">@Model.Stellar.SafeJumpWarning</div>
                     }
-
+                    <div class="text-muted">@Model.Stellar.SafeJumpDescription</div>
+                    <table class="table table-sm table-bordered mt-1 mb-1" style="width: auto">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>Acceleration</th>
+                                <th>Time (accelerate / decelerate)</th>
+                                <th>Time (constant acceleration)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var jump in Model.Stellar.SafeJumpTimes)
+                            {
+                                <tr>
+                                    <td>@(jump.Acceleration)G</td>
+                                    <td>@jump.TimeText</td>
+                                    <td>@jump.TimeNoTurnoverText</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="text-muted small">Accelerate / decelerate uses the standard Traveller formula T = 2&radic;(D/A), arriving at rest. Constant acceleration (no turnover) uses T = &radic;(2D/A).</div>
                 </td>
             </tr>
             @if (!String.IsNullOrEmpty(Model.Orbit.Code))
