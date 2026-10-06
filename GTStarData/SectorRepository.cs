@@ -1,4 +1,5 @@
 ﻿using GTStarCharts.TravellerMap;
+using GTStarData.Lookups;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -96,19 +97,13 @@ namespace GTStarData
             return result;
         }
 
-        public static TextLookup FindTextLookup(this GTStarDbContext context, Guid? lookupId)
-        {
-            if (lookupId == null)
-                return null;
-
-            var q = from sa in context.TextLookups
-                    where sa.Id == lookupId
-                    select sa;
-            return q.FirstOrDefault();
-        }
-
         public static TextLookup FindTextLookup(this GTStarDbContext context, TextType type, string code)
         {
+            if (UwpLookups.IsStaticType(type))
+            {
+                return UwpLookups.GetLookup(type, code);
+            }
+
             var q = from tl in context.TextLookups
                     where tl.TextType == type && tl.Code == code
                     select tl;
@@ -125,14 +120,23 @@ namespace GTStarData
 
         public static TextLookup FindTradeCodeLookup(this GTStarDbContext context, string code)
         {
-            string[] codes = code.Split();
-            var q = from tl in context.TextLookups
-                    where tl.TextType == TextType.TradeCode && codes.Contains(tl.Code)
-                    select tl;
-
             var result = new TextLookup();
             result.Code = code;
-            result.ShortText = String.Join(" ", q.Select(tl => tl.ShortText.TrimEnd('.') + "."));
+            if (string.IsNullOrEmpty(code))
+                return result;
+
+            string[] codes = code.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            var descriptions = new List<string>();
+            foreach (var c in codes)
+            {
+                var lookup = context.FindTextLookup(TextType.TradeCode, c);
+                if (!string.IsNullOrEmpty(lookup.ShortText))
+                {
+                    descriptions.Add(lookup.ShortText.TrimEnd('.') + ".");
+                }
+            }
+
+            result.ShortText = string.Join(" ", descriptions);
             return result;
         }
 

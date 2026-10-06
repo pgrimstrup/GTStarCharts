@@ -56,40 +56,58 @@
             <tr>
                 <td>Starport</td>
                 <td class="text-muted no-wrap">@Model.Starport.Code</td>
-                <td>@Model.Starport.ShortText</td>
+                <td>
+                    <div>@Model.Starport.ShortText</div>
+                    <div class="text-muted">@Model.Starport.LongText</div>
+                </td>
             </tr>
 
             <tr>
                 <td>Planet Size</td>
                 <td class="text-muted no-wrap">@Model.PlanetSize.Code</td>
-                <td>@Model.PlanetSize.ShortText</td>
+                <td>
+                    <div>@Model.PlanetSize.ShortText</div>
+                    <div class="text-muted">@Model.PlanetSize.LongText</div>
+                </td>
             </tr>
             @if (!String.IsNullOrEmpty(Model.Gravity.Code))
             {
                 <tr>
                     <td>Gravity</td>
                     <td class="text-muted no-wrap">@Model.Gravity.Code</td>
-                    <td>@Model.Gravity.ShortText</td>
+                    <td>
+                        <div>@Model.Gravity.ShortText</div>
+                        <div class="text-muted">@Model.Gravity.LongText</div>
+                    </td>
                 </tr>
             }
             <tr>
                 <td>Atmosphere</td>
                 <td class="text-muted no-wrap">@Model.Atmosphere.Code</td>
-                <td>@Model.Atmosphere.ShortText</td>
+                <td>
+                    <div>@Model.Atmosphere.ShortText</div>
+                    <div class="text-muted">@Model.Atmosphere.LongText</div>
+                </td>
             </tr>
 
 
             <tr>
                 <td>Hydrosphere</td>
                 <td class="text-muted no-wrap">@Model.Hydrosphere.Code</td>
-                <td>@Model.Hydrosphere.ShortText</td>
+                <td>
+                    <div>@Model.Hydrosphere.ShortText</div>
+                    <div class="text-muted">@Model.Hydrosphere.LongText</div>
+                </td>
             </tr>
             @if (!String.IsNullOrEmpty(Model.Climate.Code))
             {
                 <tr>
                     <td>Climate</td>
                     <td class="text-muted no-wrap">@Model.Climate.Code</td>
-                    <td>@Model.Climate.ShortText</td>
+                    <td>
+                        <div>@Model.Climate.ShortText</div>
+                        <div class="text-muted">@Model.Climate.LongText</div>
+                    </td>
                 </tr>
             }
 
@@ -105,41 +123,59 @@
             <tr>
                 <td>Government</td>
                 <td class="text-muted no-wrap">@Model.Government.Code</td>
-                <td>@Model.Government.ShortText</td>
+                <td>
+                    <div>@Model.Government.ShortText</div>
+                    <div class="text-muted">@Model.Government.LongText</div>
+                </td>
             </tr>
 
 
             <tr>
                 <td>Law Level</td>
                 <td class="text-muted no-wrap">@Model.LawLevel.Code</td>
-                <td>@Model.LawLevel.ShortText</td>
+                <td>
+                    <div>@Model.LawLevel.ShortText</div>
+                    <div class="text-muted">@Model.LawLevel.LongText</div>
+                </td>
             </tr>
 
 
             <tr>
                 <td>Tech Level</td>
                 <td class="text-muted no-wrap">@Model.TechLevel.Code</td>
-                <td>@Model.TechLevel.ShortText</td>
+                <td>
+                    <div>@Model.TechLevel.ShortText</div>
+                    <div class="text-muted">@Model.TechLevel.LongText</div>
+                </td>
             </tr>
 
 
             <tr>
                 <td>Importance</td>
                 <td class="text-muted no-wrap">@Model.Importance.Code</td>
-                <td>@Model.Importance.ShortText</td>
+                <td>
+                    <div>@Model.Importance.ShortText</div>
+                    <div class="text-muted">@Model.Importance.LongText</div>
+                </td>
             </tr>
 
 
             <tr>
                 <td>Allegiance</td>
                 <td class="text-muted no-wrap">@Model.Allegiance.Code</td>
-                <td>@Model.Allegiance.ShortText</td>
+                <td>
+                    <div>@Model.Allegiance.ShortText</div>
+                    <div class="text-muted">@Model.Allegiance.LongText</div>
+                </td>
             </tr>
 
             <tr>
                 <td>Trade Codes</td>
                 <td class="text-muted no-wrap">@Model.TradeCodes.Code</td>
-                <td>@Model.TradeCodes.ShortText</td>
+                <td>
+                    <div>@Model.TradeCodes.ShortText</div>
+                    <div class="text-muted">@Model.TradeCodes.LongText</div>
+                </td>
             </tr>
 
             <tr>
@@ -155,7 +191,10 @@
             <tr>
                 <td>Culture</td>
                 <td class="text-muted no-wrap">@Model.Culture.Code</td>
-                <td>@Model.Culture.ShortText</td>
+                <td>
+                    <div>@Model.Culture.ShortText</div>
+                    <div class="text-muted">@Model.Culture.LongText</div>
+                </td>
             </tr>
 
 
