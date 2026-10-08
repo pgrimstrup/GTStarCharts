@@ -1,8 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using GTStarCharts.Rules;
 using GTStarCharts.TravellerMap;
 using GTStarData;
 using Microsoft.AspNetCore.Mvc;
@@ -138,7 +134,6 @@ namespace GTStarCharts.Pages
                 Orbit = DbContext.FindTextLookup(TextType.Orbit, "");
                 Gravity = DbContext.FindTextLookup(TextType.Gravity, "");
 
-                Data.CalculateTradeFactors(Economics);
                 Stellar = StellarDataFactory.Create(Data.Stellar, Data.MainWorldDiameterKm());
 
                 DbContext.AppendOwnerInformation(Data, TradeCodes);

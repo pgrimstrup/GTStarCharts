@@ -40,11 +40,6 @@
         <div>
             <img src="/api/Images/@Model.Data.Id" style="cursor: pointer" onclick="SectorImageClick(event)" />
         </div>
-        <div>
-            <div class="display-3 text-muted m-1">Traveller Description</div>
-            <textarea class="form-control" rows="10" asp-for="Data.Description"></textarea>
-            <button type="submit" class="btn btn-primary btn-sm m-1">Save Description</button>
-        </div>
     </div>
 
     <div>
@@ -297,13 +292,6 @@
                 <td>System Details</td>
                 <td class="text-muted no-wrap">@Model.System.Code</td>
                 <td>@Model.System.ShortText</td>
-            </tr>
-            <tr>
-                <td colspan="3">
-                    <div class="display-3 text-muted m-1">GM Notes</div>
-                    <textarea rows="20" class="form-control" asp-for="Data.GMNotes"></textarea>
-                    <button class="btn btn-primary btn-sm m-1" type="submit">Update Notes</button>
-                </td>
             </tr>
         </table>
     </div>
